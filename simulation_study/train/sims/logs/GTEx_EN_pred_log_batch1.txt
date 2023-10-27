@@ -1,0 +1,99 @@
+********************************
+Input Arguments
+
+Chromosome: 19
+Gene Annotation and Expression file: /Users/randyparr/github/SR-TWAS_analysis/simulation_study/expression/raw_dosage/GTEx_expr_batch1.txt
+Training sampleID file: /Users/randyparr/github/SR-TWAS_analysis/simulation_study/sampleid/GTEx_train_465_sampleid.txt
+Training genotype file: /Users/randyparr/github/SR-TWAS_analysis/simulation_study/genotype/GTEx_ABCA7_raw.dosage.gz
+Genotype file used for training is type: dosage
+Genotype data format: DS
+Gene training region SNP inclusion window: +-1000000
+Excluding SNPs if missing rate exceeds: 0.2
+MAF threshold for SNP inclusion: 0.01
+HWE p-value threshold for SNP inclusion: 1e-05
+Evaluating Elastic-Net model by 5-fold cross validation with inclusion threshold Avg.CVR2 >0.005.
+Number of cross-validation folds used to tune Elastic-Net penalty parameter (lambda): 5
+Ratio for L1 & L2 penalty used by Elastic-Net regression (alpha): [0.5]
+Number of threads: 1
+Output directory: /Users/randyparr/github/SR-TWAS_analysis/simulation_study/train//sims
+Output training weights file: /Users/randyparr/github/SR-TWAS_analysis/simulation_study/train/sims/GTEx_train_EN_weight_batch1
+Output training info file: /Users/randyparr/github/SR-TWAS_analysis/simulation_study/train/sims/GTEx_train_EN_info_batch1.txt
+
+********************************
+
+args.out_dir = '/Users/randyparr/github/SR-TWAS_analysis/simulation_study/train//sims'
+args.job_suf = '_CHR19'
+args.thread = 1
+args.genofile_type = 'dosage'
+args.out_sub_dir = '/Users/randyparr/github/SR-TWAS_analysis/simulation_study/train/sims'
+args.chrm = '19'
+args.sampleid_path = '/Users/randyparr/github/SR-TWAS_analysis/simulation_study/sampleid/GTEx_train_465_sampleid.txt'
+args.geno_path = '/Users/randyparr/github/SR-TWAS_analysis/simulation_study/genotype/GTEx_ABCA7_raw.dosage.gz'
+args.missing_rate = 0.2
+args.maf = 0.01
+args.hwe = 1e-05
+args.out_info_file = 'GTEx_train_EN_info_batch1.txt'
+args.out_info_path = '/Users/randyparr/github/SR-TWAS_analysis/simulation_study/train/sims/GTEx_train_EN_info_batch1.txt'
+args.geneexp_path = '/Users/randyparr/github/SR-TWAS_analysis/simulation_study/expression/raw_dosage/GTEx_expr_batch1.txt'
+args.out_weight_file = 'GTEx_train_EN_weight_batch1'
+args.data_format = 'DS'
+args.tmp_weight_path = '/Users/randyparr/github/SR-TWAS_analysis/simulation_study/train/sims/temp_GTEx_train_EN_weight_batch1'
+args.sub_dir = 0
+args.alpha = [0.5]
+args.window = 1000000
+args.use_alpha = 1
+args.cvR2_threshold = 0.005
+args.cv = 5
+args.log_file = 'GTEx_EN_pred_log_batch1.txt'
+args.TIGAR_dir = '/Users/randyparr/github/SR-TWAS_analysis/simulation_study/scripts/TIGAR_SR_sim/'
+args.out_prefix = 'CHR19_EN_train'
+args.out_weight_path = '/Users/randyparr/github/SR-TWAS_analysis/simulation_study/train/sims/GTEx_train_EN_weight_batch1'
+args.cvR2 = 1
+
+
+Reading genotype, expression file headers, sample IDs.
+
+Reading sampleID file.
+
+Reading file headers.
+
+Matching sampleIDs.
+
+Reading gene expression data.
+
+Splitting sample IDs randomly for 5-fold cross validation by average R2...
+
+Creating file: /Users/randyparr/github/SR-TWAS_analysis/simulation_study/train/sims/GTEx_train_EN_weight_batch1_header.txt
+
+Creating file: /Users/randyparr/github/SR-TWAS_analysis/simulation_study/train/sims/GTEx_train_EN_info_batch1.txt
+
+********************************
+
+Starting Elastic-Net training for 10 target genes.
+
+num=0
+TargetID=0.01_0.01_0.5_0.5_0.5_1
+Running 5-fold CV.
+Average R2 for 5-fold CV: 0.2632
+Running Elastic-Net training.
+Caught an exception for num=0:
+  FileNotFoundError: [Errno 2] No such file or directory: '/Users/randyparr/github/SR-TWAS_analysis/simulation_study/scripts/TIGAR_SR_sim/sort_tabix_output.sh'
+Traceback:
+  File "/Users/randyparr/github/SR-TWAS_analysis/simulation_study/scripts/TIGAR_SR_sim//Train_EN_2.py", line 415, in thread_process
+    out_sub_dir + '/' + args.out_weight_file + '_' + target + '.txt')
+  File "/Users/randyparr/github/SR-TWAS_analysis/simulation_study/scripts/TIGAR_SR_sim//Train_EN_2.py", line 257, in sort_tabix_output
+    stdout=subprocess.DEVNULL)
+  File "/opt/anaconda3/envs/tigarenv/lib/python3.5/subprocess.py", line 266, in check_call
+    retcode = call(*popenargs, **kwargs)
+  File "/opt/anaconda3/envs/tigarenv/lib/python3.5/subprocess.py", line 247, in call
+    with Popen(*popenargs, **kwargs) as p:
+  File "/opt/anaconda3/envs/tigarenv/lib/python3.5/subprocess.py", line 676, in __init__
+    restore_signals, start_new_session)
+  File "/opt/anaconda3/envs/tigarenv/lib/python3.5/subprocess.py", line 1289, in _execute_child
+    raise child_exception_type(errno_num, err_msg)
+
+num=1
+TargetID=0.01_0.01_0.5_0.5_0.5_2
+Running 5-fold CV.
+Average R2 for 5-fold CV: 0.3765
+Running Elastic-Net training.

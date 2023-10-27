@@ -1,0 +1,32 @@
+
+
+
+
+
+Reading genotype, expression file headers, sample IDs.
+
+Reading sampleID file.
+
+Reading file headers.
+
+Matching sampleIDs.
+
+Reading gene expression data.
+
+Splitting sample IDs randomly for 5-fold cross validation by average R2...
+
+Creating file: /Users/randyparr/github/SR-TWAS_analysis/simulation_study//train//sims/ROSMAP_train_DPR_weight_batch1_header.txt.gz
+
+
+
+4
+
+
+
+
+
+
+
+
+
+[23;0t
