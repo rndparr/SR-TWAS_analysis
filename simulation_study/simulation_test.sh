@@ -5,26 +5,29 @@
 ############
 ## SET UP
 ############
-sim_dir='/home/rparrish/github/SR-TWAS_analysis/simulation_study/'
+sim_dir='/home/rparrish/github/SR-TWAS_analysis/simulation_study'
 cd ${sim_dir}/scripts
 
-N_sim=1000
+## number of cores for scripts that can run in parallel
 ncores=1
+
+## name for batch of files
 suffix=''
 
-ggplot2_lib='/home/rparrish/lib/R/ggplot2_3.3.0'
-# library(devtools); install_version('ggplot2', version = '3.3.0', lib='/home/rparrish/lib/R/ggplot2_3.3.0')
+## number of simulations to do (fixed at simulate expression step)
+N_sim=2
 
-# variables for generating jobs_list (see section for details)
-prop_causal_snps=(0.01 0.05)
-expr_hes=(0.2 0.5)
+## ggplot2 v3.3.0 library location; plotting step only
+ggplot2_lib='/home/rparrish/lib/R/ggplot2_3.3.0'
+
+## variables for generating jobs_list (see section for details)
+prop_causal_snps=(0.05)
+expr_hes=(0.2)
 overlap=1
 gtex_prop_causal_factor=1
 gtex_expr_he_factor=1
 
-############
 ## load modules/python
-############
 module load tabix/0.2.6
 conda activate py36
 export PYTHONPATH=/home/rparrish/.conda/envs/py36/lib/python3.6/site-packages/
@@ -56,13 +59,13 @@ echo $jobs_list
 ## simulate expression
 ############
 # R packages: doFuture, foreach
-Rscript simulate_expression.R ${sim_dir} ${jobs_list} ${suffix} ${ncores} ${N_sim}
+Rscript ./simulate_expression.R ${sim_dir}/ ${jobs_list} ${suffix} ${ncores} ${N_sim}
 
 ############
 ## train/pred base models
 ############
 # TIGAR-ROSMAP
-train_pred_base.sh \
+./train_pred_base.sh \
 	--sim_dir ${sim_dir} \
 	--train_model 'TIGAR' \
 	--dataset 'ROSMAP' \
@@ -71,7 +74,7 @@ train_pred_base.sh \
 	--suffix ${suffix}
 
 # PrediXcan-GTEx
-train_pred_base.sh \
+./train_pred_base.sh \
 	--sim_dir ${sim_dir} \
 	--train_model 'PrediXcan' \
 	--dataset 'GTEx' \
@@ -79,8 +82,8 @@ train_pred_base.sh \
 	--ncores ${ncores} \
 	--suffix ${suffix}
 	
-# TIGAR-ROSMAP-valid
-train_pred_base.sh \
+# TIGAR-ROSMAP_valid
+./train_pred_base.sh \
 	--sim_dir ${sim_dir} \
 	--train_model 'TIGAR' \
 	--dataset 'ROSMAP' \
@@ -93,7 +96,9 @@ train_pred_base.sh \
 ############
 ## train/pred sr-naive models
 ############
-train_pred_srnaive.sh \
+# Naive-TIGAR-ROSMAP_PrediXcan-GTEx
+# SR-TIGAR-ROSMAP_PrediXcan-GTEx
+./train_pred_srnaive.sh \
 	--sim_dir ${sim_dir} \
 	--w1 'TIGAR-ROSMAP' \
 	--w2 'PrediXcan-GTEx' \
@@ -104,7 +109,8 @@ train_pred_srnaive.sh \
 ############
 ## train/pred avg-novalid models
 ############
-train_pred_avg-novalid.sh \
+# Avg-SRbasevalid
+./train_pred_avg-novalid.sh \
 	--sim_dir ${sim_dir} \
 	--w1 'TIGAR-ROSMAP_valid' \
 	--w2 'SR-TIGAR-ROSMAP_PrediXcan-GTEx' \
@@ -118,16 +124,16 @@ train_pred_avg-novalid.sh \
 datasets=(TIGAR-ROSMAP TIGAR-ROSMAP_valid PrediXcan-GTEx Naive-TIGAR-ROSMAP_PrediXcan-GTEx SR-TIGAR-ROSMAP_PrediXcan-GTEx Avg-SRbasevalid)
 
 # add header to output file
-head -n1 ${dir}/${datasets[0]}_pred.txt | \
-awk 'BEGIN { FS = OFS = "\t" } {print "dataset\t"$0'} \
-	> ${dir}/all_pred_results${suffix}.txt
+head -n1 ${sim_dir}/pred/${datasets[0]}_pred.txt | \
+	awk 'BEGIN { FS = OFS = "\t" } {print "dataset\t"$0'} \
+	> ${sim_dir}/pred/all_pred_results${suffix}.txt
 
 # add data to output file
 for dataset in ${datasets[@]}; do
-	path=${dir}/${dataset}${suffix}_pred.txt
+	path=${sim_dir}/pred/${dataset}${suffix}_pred.txt
 	tail -n+2 ${path} | \
-	awk -v dataset=${dataset} 'BEGIN { FS = OFS = "\t" } {print dataset"\t"$0}' \
-	>> ${dir}/all_pred_results${suffix}.txt
+		awk -v dataset=${dataset} 'BEGIN { FS = OFS = "\t" } {print dataset"\t"$0}' \
+		>> ${sim_dir}/pred/all_pred_results${suffix}.txt
 done
 
 
@@ -135,14 +141,14 @@ done
 ## results
 ############
 # R packages: doFuture, foreach, reshape2
-Rscript results_setup.R ${sim_dir} ${suffix} ${ncores}
+Rscript ./results_setup.R ${sim_dir}/ ${suffix} ${ncores}
 
 
 ############
 ## plot results
 ############
 # reqires packages: ggsci, grid, gtable, gridExtra, paletteer, reshape2, ggplot2 v3.3.0
-Rscript plots.R ${sim_dir} ${suffix} ${ggplot2_lib}
+Rscript ./plots.R ${sim_dir}/ ${suffix} ${ggplot2_lib}
 
 
 ########################

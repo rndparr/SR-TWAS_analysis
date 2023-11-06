@@ -11,8 +11,9 @@ library(foreach)
 
 # load grguments
 args=(commandArgs(TRUE))
-cat(paste0('args:\n'))
+cat(paste0('\nargs:\n'))
 print(args)
+cat()
 if(length(args)==0) {
 	stop("Error: No arguments supplied!")
 } else if(length(args)==4) {
@@ -101,6 +102,8 @@ safe_sample <- function(x, n){
 	sample(x, min(length(x), max(0, n)))
 }
 
+
+cat('\nReading data.\n\n')
 # set sampleids list
 sampleid <- list(
 	'GTEx' = get_sampleids('GTEx'),
@@ -124,6 +127,8 @@ out_dir <- paste0(sim_dir, 'expression/')
 
 ### OUTPUT HEADERS OF THE ALL EXPRESSION FILES
 info_out_cols <- c('CHROM', 'GeneStart', 'GeneEnd', 'TargetID', 'GeneName')
+
+cat(paste0('Output files:\n', out_dir, 'both_expr', suffix, '.txt\n', out_dir, 'GTEx_expr', suffix, '.txt\n', out_dir, 'ROSMAP_expr', suffix, '.txt\n\n'))
 
 cat(paste(c(info_out_cols, sampleid[['GTEx']], sampleid[['ROSMAP']]), 
 		collapse='\t', sep=''), 
@@ -161,7 +166,10 @@ get_expr <- function(expr, he2) {
 
 set.seed(654321)
 
+cat(paste('Generating expression data for', length(jobs), 'jobs:\n\n'))
 for (job in jobs){
+	cat(paste0('\t', job, '\n'))
+	cat('\tGetting causal SNPs.\n')
 
 	# get job params; then find causal snps to use
 	job_list <- as.numeric(strsplit(job,'_')[[1]])
@@ -227,6 +235,7 @@ for (job in jobs){
 	# start time
 	start_time <- Sys.time()
 
+	cat(paste('\tStarting', N_sims,'expr simulations.\n'))
 	# do N_sims simulations/different expression
 	expr_sims <- foreach(i=1:N_sims, .combine=rbind) %dopar% {
 
@@ -299,6 +308,8 @@ for (job in jobs){
 
 	# time elapsed
 	end_time <- Sys.time()
-	cat(paste('Computation time:', end_time - start_time, '\n'))
+	cat(paste('\tComputation time:', end_time - start_time, '\n\n'))
 
 }
+cat('Done!\n\n')
+

@@ -447,7 +447,7 @@ if args.naive:
 	# 	sep='\t',
 	# 	mode='w')
 
-	print('Creating file: ' + out_sub_dir + '/' + args.out_naive_weight_file + 'header.txt.gz' + '\n')
+	print('Creating file: ' + out_sub_dir + '/' + args.out_naive_weight_file + '_header.txt.gz' + '\n')
 	pd.DataFrame(columns=out_weight_cols).to_csv(
 		out_sub_dir + '/' + args.out_naive_weight_file + 'header.txt.gz',
 		header=True,

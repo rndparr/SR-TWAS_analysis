@@ -121,7 +121,7 @@ sys.stdout = open(os.path.join(args.out_dir, 'logs', args.log_file), 'w')
 import TIGARutils as tg
 
 # directory for temporary output files; need to be defined here for some functions
-abs_out_dir = tg.get_abs_path(args.out_dir)
+abs_out_dir = tg.get_abs_path(out_sub_dir)
 dpr_file_dir = abs_out_dir + '/DPR_Files' + args.job_suf + '/'
 dpr_file_dir_cv = abs_out_dir + '/CV_Files' + args.job_suf + '/'
 

@@ -21,12 +21,48 @@ if(length(args)==0) {
 
 # load libraries
 library(ggplot2, lib.loc=ggplot2_lib)
+# library(devtools); install_version('ggplot2', version='3.3.0', lib=ggplot2_lib)
 library(grid)
 library(gtable)
 library(gridExtra)
 library(paletteer)
 library(reshape2)
 
+################
+# set directories
+out_dir <- paste0(sim_dir, 'plot/')
+setwd(out_dir)
+
+# get jobs
+load(paste0(sim_dir, 'power/data/jobs', suffix, '.Rdata'))
+
+# get information about job for subtitles, expression facet labels
+ex_job <- jobs[[1]]
+ex_job_list <- as.numeric(strsplit(ex_job,'_')[[1]])
+
+gtex_pc_factor <- ex_job_list[2] / ex_job_list[1]
+gtex_he2_factor <- ex_job_list[5] / ex_job_list[4]
+gtex_poverlap <- ex_job_list[3]
+
+
+# phenotype
+pheno_h2_list <- c(0.05, 0.1, 0.175, 0.25, 0.375, 0.5, 0.625, 0.75, 0.875)
+
+filetypes <- c('jpeg')
+
+
+subtitle_suf <- ''
+subtitle_suf <- '_subtitle'
+
+# load data
+load(paste0(sim_dir, 'plot/plot_data', suffix, '.Rdata'))
+
+
+############################################
+# Plot size
+w <- 8.5
+h <- 8 + ifelse(subtitle_suf == '', 0, 0.5)
+h2 <- 6.25 + ifelse(subtitle_suf == '', 0, 0.5)
 
 ################
 # PLOT FUNCTIONS
@@ -50,42 +86,62 @@ facet_labs <- function(p, tlab=NULL, rlab=NULL){
 	return(gt)
 }
 
-
 # EXPRESSION FACET LABEL
-get_expr_facet_lab <- function(job_cat) { 
-	expr_facet_lab_var1 <- list('same'='', 'half'='ROSMAP ', 'zero'='ROSMAP ', 'overlap'='')[[job_cat]]
-	expr_facet_lab_var2 <- list(
-		'same'=bquote(italic(h)[italic(e)*",GTEx"]^{2}==italic(h)[italic(e)*",ROSMAP"]^{2}), 
-		'half'=bquote(italic(h)[italic(e)*",GTEx"]^{2}==0.5%*%italic(h)[italic(e)*",ROSMAP"]^{2}), 
-		'zero'=bquote(italic(h)[italic(e)*",ROSMAP"]^{2}*'; '*italic(h)[italic(e)*",GTEx"]^{2}==0),
-		'overlap'=bquote(italic(h)[italic(e)*",GTEx"]^{2}==italic(h)[italic(e)*",ROSMAP"]^{2})
-		)[[job_cat]]
+get_expr_facet_lab <- function(j) { 
+	if (gtex_he2_factor == 1) {
+		expr_facet_lab_var1 <- ''
+		expr_facet_lab_var2 <- bquote(italic(h)[italic(e)*",GTEx"]^{2}==italic(h)[italic(e)*",ROSMAP"]^{2})
+
+	} else if (gtex_he2_factor == 0) {
+		expr_facet_lab_var1 <- 'ROSMAP '
+		expr_facet_lab_var2 <- bquote(italic(h)[italic(e)*",ROSMAP"]^{2}*'; '*italic(h)[italic(e)*",GTEx"]^{2}==0)
+
+	} else {
+		expr_facet_lab_var1 <- 'ROSMAP '
+		expr_facet_lab_var2 <- bquote(italic(h)[italic(e)*",GTEx"]^{2}==.(gtex_he2_factor)%*%italic(h)[italic(e)*",ROSMAP"]^{2})
+	}
 	expr_facet_lab <- bquote(.(expr_facet_lab_var1)*'Expression Heritability ('*.(expr_facet_lab_var2)*')')
 	return(expr_facet_lab)
 }
 
-################
-# set directories
-out_dir <- paste0(sim_dir, 'plot/')
-setwd(out_dir)
+# gtex_he2_factor=1; expr_facet_lab <- get_expr_facet_lab(); plot(x=1:5,y=1:5,main=expr_facet_lab)
 
-# get jobs
-load(paste0(sim_dir, 'power/data/jobs', suffix, '.Rdata'))
+get_pcausal_facet_lab <- function(){
+	if (gtex_pc_factor == 1) {
+		pcausal_facet_lab_var1 <- ''
+		pcausal_facet_lab_var2 <- bquote(italic(p)['causal'])
 
-# phenotype
-pheno_h2_list <- c(0.05, 0.1, 0.175, 0.25, 0.375, 0.5, 0.625, 0.75, 0.875)
+	} else if(gtex_pc_factor == 0) {
+		pcausal_facet_lab_var1 <- 'ROSMAP '
+		pcausal_facet_lab_var2 <- bquote(italic(p)['ROSMAP']*'; '*italic(p)['GTEx']==0)
 
-filetypes <- c('jpeg')
+	} else {
+		pcausal_facet_lab_var1 <- 'ROSMAP '
+		pcausal_facet_lab_var2 <- bquote(italic(p)['GTEx']==.(gtex_pc_factor)%*%italic(p)['ROSMAP'])
+	}
+	pcausal_facet_lab <- bquote(.(pcausal_facet_lab_var1)*'Proportion of Causal SNPs ('*.(pcausal_facet_lab_var2)*')')
+	return(pcausal_facet_lab)
+}
 
+# gtex_pc_factor=0.5; pcausal_facet_lab <- get_pcausal_facet_lab(); plot(x=1:5,y=1:5,main=pcausal_facet_lab)
 
-subtitle_suf <- ''
-subtitle_suf <- '_subtitle'
-
-# load data
-load(paste0(sim_dir, 'plot/plot_data_scenario5', suffix, '.Rdata'))
+get_subtitle <- function() {
+	if (subtitle_suf == '') {
+		return(NULL)
+	} else {
+		ret <- paste0('GTEx causal SNPs chosen for ',  sprintf("%.0f%%", gtex_poverlap * 100), ' overlap with ROSMAP causal SNPs.')
+		return(ret)
+	} 
+}
 
 
 ############################################
+# subtitle, facet labels
+subtitle_str <- get_subtitle()
+expr_facet_lab <- get_expr_facet_lab()
+pcausal_facet_lab <- get_pcausal_facet_lab()
+
+
 # set up palette
 ## https://pmassicotte.github.io/paletteer_gallery/
 labels_vec <- c('PrediXcan-GTEx', 'TIGAR-ROSMAP', 'Naive', 'TIGAR-ROSMAP_valid', 'SR-TWAS', 'Avg-Base+SR')
@@ -102,10 +158,6 @@ legend_pos <- 'bottom'
 ####################
 # POWER
 ####################
-# subtitle
-subtitle_var1 <- get_subtitle_var1(job_cat)
-expr_facet_lab <- get_expr_facet_lab(job_cat)
-
 dat1 <- na.omit(power_dat)
 
 power_plot_raw <- ggplot(data=dat1, 
@@ -126,7 +178,7 @@ power_plot_raw <- ggplot(data=dat1,
 		values=shape_pal) +
 	labs(
 		title=NULL,
-		subtitle=subtitle_var1,
+		subtitle=subtitle_str,
 		color=NULL,
 		x=bquote('Phenotype Heritability ('*italic(h)[italic(p)]^{2}*')'),
 		y='Power')
@@ -134,14 +186,12 @@ power_plot_raw <- ggplot(data=dat1,
 power_plot1 <- power_plot_raw + 
 	facet_grid(ROSMAP_causal_prop ~ ROSMAP_He2)
 power_plot1 <- facet_labs(power_plot1, 
-		expr_facet_lab, 
-		bquote('Proportion of Causal SNPs ('*italic(p)['causal']*')'))
+		expr_facet_lab, pcausal_facet_lab)
 
 power_plot2 <- power_plot_raw + 
 	facet_grid(ROSMAP_He2 ~ ROSMAP_causal_prop, scales='free_y')
 power_plot2 <- facet_labs(power_plot2,  
-		bquote('Proportion of Causal SNPs ('*italic(p)['causal']*')'),
-		expr_facet_lab)
+		pcausal_facet_lab, expr_facet_lab)
 
 for (filetype in filetypes) {
 	ggsave(paste0(out_dir, 'power', subtitle_suf, suffix, '.', filetype), power_plot1, width=w, height=h)
@@ -153,10 +203,6 @@ for (filetype in filetypes) {
 ## EXPRESSION PREDICTION TEST R2
 #########################
 boxplot_dat <- pred_dat
-
-# subtitle
-subtitle_var1 <- get_subtitle_var1(job_cat)
-expr_facet_lab <- get_expr_facet_lab(job_cat)
 
 boxplot_p_raw <- ggplot(data=boxplot_dat, aes(x=cohort, y=expr_R2, color=cohort)) + 
 	geom_boxplot() +
@@ -183,7 +229,7 @@ boxplot_p_raw <- ggplot(data=boxplot_dat, aes(x=cohort, y=expr_R2, color=cohort)
 		breaks=breaks_vec,
 		values=color_pal) +
 	labs(
-		subtitle=subtitle_var1,
+		subtitle=subtitle_str,
 		x=NULL,
 		y=bquote('Expression Prediction'~italic(R)^2)
 		)
@@ -191,14 +237,12 @@ boxplot_p_raw <- ggplot(data=boxplot_dat, aes(x=cohort, y=expr_R2, color=cohort)
 boxplot_p1 <- boxplot_p_raw + 
 	facet_grid(ROSMAP_causal_prop ~ ROSMAP_He2)
 boxplot_p1 <- facet_labs(boxplot_p1, 
-		expr_facet_lab, 
-		bquote('Proportion of Causal SNPs ('*italic(p)['causal']*')'))
+		expr_facet_lab, pcausal_facet_lab)
 
 boxplot_p2 <- boxplot_p_raw + 
 	facet_grid(ROSMAP_He2 ~ ROSMAP_causal_prop, scales='free_y')
 boxplot_p2 <- facet_labs(boxplot_p2, 
-		bquote('Proportion of Causal SNPs ('*italic(p)['causal']*')'),
-		expr_facet_lab)
+		pcausal_facet_lab, expr_facet_lab)
 
 for (filetype in filetypes) {
 	ggsave(paste0(out_dir, 'exprR2', subtitle_suf, suffix,'.', filetype), boxplot_p1, width=w, height=h)
@@ -211,11 +255,6 @@ for (filetype in filetypes) {
 # can't do CVR2,R2 with Avg data because there's no evaluation step
 cvr2_r2_x <- 'Naive'
 cvr2_r2_y <- 'SR-TWAS'
-
-
-# subtitle
-subtitle_var1 <- get_subtitle_var1(job_cat)
-expr_facet_lab <- get_expr_facet_lab(job_cat)
 
 # data
 cvr2_dat1 <- train_dat[(train_dat$cohort %in% c(cvr2_r2_x, cvr2_r2_y)), c('TargetID', 'ROSMAP_causal_prop', 'ROSMAP_He2', 'ValidCVR2', 'cohort')]
@@ -257,7 +296,7 @@ CVR2_plot_raw <- ggplot(cvr2_dat2, aes(x=.data[[cvr2_r2_x]], y=.data[[cvr2_r2_y]
 		values=setNames(pal0[c('red','black','blue','orange')], c('1', '2', '3', '4'))) +
 	labs(
 		title=NULL,
-		subtitle=subtitle_var1,
+		subtitle=subtitle_str,
 		x=cvr2_r2_x,
 		y=cvr2_r2_y,
 		fill='')
@@ -265,14 +304,12 @@ CVR2_plot_raw <- ggplot(cvr2_dat2, aes(x=.data[[cvr2_r2_x]], y=.data[[cvr2_r2_y]
 CVR2_plot1 <- CVR2_plot_raw + 
 	facet_grid(ROSMAP_causal_prop ~ ROSMAP_He2)
 CVR2_plot1 <- facet_labs(CVR2_plot1, 
-	expr_facet_lab, 
-	bquote('Proportion of Causal SNPs ('*italic(p)['causal']*')'))
+	expr_facet_lab, pcausal_facet_lab)
 
 CVR2_plot2 <- CVR2_plot_raw + 
 	facet_grid(ROSMAP_He2 ~ ROSMAP_causal_prop, scales='free_y')
 CVR2_plot2 <- facet_labs(CVR2_plot2, 
-	bquote('Proportion of Causal SNPs ('*italic(p)['causal']*')'),
-	expr_facet_lab)
+	pcausal_facet_lab, expr_facet_lab)
 
 for (filetype in filetypes) {
 	ggsave(paste0(out_dir, 'CVR2_', cvr2_r2_x, '_', cvr2_r2_y, subtitle_suf, suffix, '.', filetype), CVR2_plot1, width=w, height=h)
@@ -282,9 +319,6 @@ for (filetype in filetypes) {
 #########################
 ## R2 PLOT
 #########################
-# subtitle
-subtitle_var1 <- get_subtitle_var1(job_cat)
-expr_facet_lab <- get_expr_facet_lab(job_cat)
 
 # data
 r2_dat1 <- train_dat[(train_dat$cohort %in% c(cvr2_r2_y, cvr2_r2_x)), c('TargetID', 'ROSMAP_causal_prop', 'ROSMAP_He2', 'ValidR2', 'cohort')]
@@ -325,7 +359,7 @@ R2_plot_raw <- ggplot(r2_dat2, aes(x=.data[[cvr2_r2_x]], y=.data[[cvr2_r2_y]], c
 		values=setNames(pal0[c('red','black','blue','orange')], c('1', '2', '3', '4'))) +
 	labs(
 		title=NULL,
-		subtitle=subtitle_var1,
+		subtitle=subtitle_str,
 		x=cvr2_r2_x,
 		y=cvr2_r2_y,
 		fill='')
@@ -333,14 +367,12 @@ R2_plot_raw <- ggplot(r2_dat2, aes(x=.data[[cvr2_r2_x]], y=.data[[cvr2_r2_y]], c
 R2_plot1 <- R2_plot_raw + 
 	facet_grid(ROSMAP_causal_prop ~ ROSMAP_He2)
 R2_plot1 <- facet_labs(R2_plot1, 
-	expr_facet_lab, 
-	bquote('Proportion of Causal SNPs ('*italic(p)['causal']*')'))
+	expr_facet_lab, pcausal_facet_lab)
 
 R2_plot2 <- R2_plot_raw + 
 	facet_grid(ROSMAP_He2 ~ ROSMAP_causal_prop, scales='free_y')
 R2_plot2 <- facet_labs(R2_plot2, 
-	bquote('Proportion of Causal SNPs ('*italic(p)['causal']*')'),
-	expr_facet_lab)
+	pcausal_facet_lab, expr_facet_lab)
 
 for (filetype in filetypes) {
 	ggsave(paste0(out_dir, 'R2_', cvr2_r2_x, '_', cvr2_r2_y, subtitle_suf, suffix, '.', filetype), R2_plot1, width=w, height=h)

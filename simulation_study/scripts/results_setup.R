@@ -11,7 +11,9 @@ library(reshape2)
 
 # load grguments
 args=(commandArgs(TRUE))
+cat(paste0('\nargs:\n'))
 print(args)
+cat()
 if(length(args)==0) {
 	stop("Error: No arguments supplied!")
 } else if(length(args)==2) {
@@ -127,7 +129,7 @@ job_pwr <- function(data) {
 ######################################################
 ### SETUP
 ######################################################
-
+cat('\nReading prediction results.\n\n')
 ## READ IN PREDICTION RESULTS
 pred_path <- paste0(sim_dir, 'pred/all_pred_results', suffix, '.txt')
 pred_cols <- colnames(read.table(pred_path, header=TRUE, check.names=FALSE, nrow=1))
@@ -142,6 +144,7 @@ get_pred_job <- function(dataset, job){
 	return(shapedat(ret_pred, paste0(dataset, '_pred')))
 }
 
+cat('Reading simulated expression data.\n\n')
 ## READ IN SIMULATED EXPRESSION
 # path to simulated expression
 sim_expr_path <- paste0(sim_dir, 'expression/ROSMAP_expr', suffix, '.txt')
@@ -189,10 +192,11 @@ expr_var <- by(sim_expr_allsamps$sim_expr, sim_expr_allsamps$TargetID, var, simp
 save(expr_var, file=paste0(sim_dir, 'power/data/expr_var', suffix, '.Rdata'))
 rm(list=c('sim_expr_allsamps', 'expr_var'))
 
+
 ## EXPORT DATA FOR EACH JOB
-print('Getting sim_dat per job:')
+cat(paste('Exporting expression/prediction data for', length(jobs), 'jobs:\n'))
 for (job in jobs) {
-	print(job)
+	cat(paste0('\t', job, '\n'))
 
 	load(paste0(sim_dir, 'power/data/sim_expr_noshape_testsampleid', suffix,  '.Rdata'))
 
@@ -238,9 +242,9 @@ load(paste0(sim_dir, 'power/data/jobs', suffix, '.Rdata'))
 # load expression variance
 load(paste0(sim_dir, 'power/data/expr_var', suffix, '.Rdata'))
 
-print('Prediction/Power results:')
+cat(paste('\nGetting prediction/power/phenotype prediction results for', length(jobs), 'jobs:\n'))
 for (job in jobs) {
-	print(job)
+	cat(paste0('\t', job, '\n'))
 
 	# get start time
 	start_time <- Sys.time()
@@ -258,6 +262,7 @@ for (job in jobs) {
 		do.call(rbind, strsplit(sim_data$TargetID, '_'))[, i_pos])))
 
 	# for each pheno_h2, do i_targets of: getting expression prediction R2, phenotype prediction and power analysis simulations
+	cat(paste0('\tStarting analysis.\n'))
 	out_data <- foreach(pheno_h2=pheno_h2_list, .combine=rbind) %:%
 	foreach(i=i_targets, .combine=rbind) %dopar% {
 
@@ -274,7 +279,6 @@ for (job in jobs) {
 
 		# Simulate phenotype from test expression
 		target_data$sim_pheno <- gamma * target_data$sim_expr + error_term
-
 
 		head(target_data)
 		# output for target
@@ -298,6 +302,7 @@ for (job in jobs) {
 
 	} %seed% 7654567
 
+	cat(paste0('\tOutputting results.\n'))
 	# get power info
 	out_power <- data.frame(
 		'job'=job,
@@ -336,7 +341,7 @@ for (job in jobs) {
 
 	# time elapsed
 	end_time <- Sys.time()
-	print(paste0('Computation time: ', end_time - start_time))
+	cat(paste0('\tComputation time: ', end_time - start_time, '\n\n'))
 }
 
 ######################################################
@@ -345,18 +350,20 @@ for (job in jobs) {
 options(stringsAsFactors=FALSE, digits=5)
 setwd(plot_dir)
 
+cat(paste0('Setting up dataframes for plots.\n'))
+
 # set up data frames
 # sr_dat <- data.frame()
 train_dat <- data.frame()
 
 #############################
 ### TRAIN DAT
+cat(paste0('\tSetting up training data.\n'))
+
 train_info_path <- function(x) { paste0(sim_dir, 'train/', datasets_filename_str[x], suffix, '_train_info.txt') }
 # sr_rename <- function(col){ return(	sub(suffix, '', sub('Z_W', 'Z', sub('TIGAR-ROSMAP', 'W0', sub('PrediXcan-GTEx', 'W1', col)))) ) }
 
-print('Setting up train_dat:')
 for (dataset in datasets) {
-
 	train_dat_path <- train_info_path(dataset)
 
 	# get column names/classes for different train info filetypes
@@ -463,7 +470,8 @@ train_dat$cohort <- factor(train_dat$cohort, levels=c('TIGAR-ROSMAP', 'PrediXcan
 
 #############################
 ### PRED DAT
-print('Setting up pred_dat:')
+cat(paste0('\tSetting up prediction data.\n'))
+
 pred_dat <- data.frame()
 pred_dat_path <- paste0(sim_dir, 'power/all_pred_results', suffix, '.txt')
 pred_dat <- read.table(pred_dat_path, header=TRUE, check.names=FALSE, sep='\t')
@@ -473,9 +481,9 @@ pred_dat$cohort <- factor(pred_dat$cohort, levels=c('TIGAR-ROSMAP', 'PrediXcan-G
 
 #############################
 ### POWER DAT
-print('Setting up power_dat:')
-power_dat <- data.frame()
+cat(paste0('\tSetting up power data.\n'))
 
+power_dat <- data.frame()
 power_dat_path <- paste0(sim_dir, 'power/all_power_results', suffix, '.txt')
 power_dat <- read.table(power_dat_path, header=TRUE, check.names=FALSE, sep='\t')
 
@@ -487,5 +495,9 @@ power_dat$cohort <- factor(power_dat$cohort, levels=c('TIGAR-ROSMAP', 'PrediXcan
 
 #############################
 # save plot data
-save(train_dat, pred_dat, power_dat, file=paste0(sim_dir, 'plot/plot_data_scenario5', suffix, '.Rdata'))
+cat(paste0('\tSaving dataframes.\n\n'))
+
+save(train_dat, pred_dat, power_dat, file=paste0(sim_dir, 'plot/plot_data', suffix, '.Rdata'))
+
+cat('Done!\n\n')
 

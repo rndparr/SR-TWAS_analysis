@@ -61,7 +61,7 @@ parser.add_argument('--log_file', type=str, default='')
 parser.add_argument('--out_prefix', type=str, default='')
 parser.add_argument('--out_info_file', type=str, default='')
 parser.add_argument('--out_weight_file', type=str, default='')
-parser.add_argument('--sub_dir', type=int, choices=[0, 1], default=1)
+parser.add_argument('--sub_dir', type=str, default='')
 parser.add_argument('--thread', type=int, default=1)
 parser.add_argument('--train_sampleID', type=str, dest='sampleid_path')
 parser.add_argument('--window', type=int, default=1000000)
@@ -87,7 +87,7 @@ if not args.job_suf:
 
 # sub-directory in out directory
 if args.sub_dir:
-	out_sub_dir = os.path.join(args.out_dir, 'EN_CHR' + args.chrm)
+	out_sub_dir = os.path.join(args.out_dir, args.sub_dir)
 else:
 	out_sub_dir = args.out_dir
 
@@ -146,14 +146,14 @@ if not args.out_weight_file:
 
 # sub-directory in out directory
 if args.sub_dir:
-	args.out_sub_dir = os.path.join(args.out_dir, 'EN_CHR' + args.chrm)
+	args.out_sub_dir = os.path.join(args.out_dir, args.sub_dir)
 else:
 	args.out_sub_dir = args.out_dir
 args.out_sub_dir = tg.get_abs_path(args.out_sub_dir)
 
 args.tmp_weight_path = args.out_sub_dir + '/temp_' + args.out_weight_file
 args.out_weight_path = args.out_sub_dir + '/' + args.out_weight_file
-args.out_info_path = args.out_sub_dir + '/' +  args.out_info_file
+args.out_info_path = args.out_dir + '/' +  args.out_info_file
 
 #############################################################
 # print to log
@@ -205,7 +205,7 @@ def elastic_net(train, test=None, k=args.cv, Alphas=args.alpha):
 	reg = ElasticNetCV(
 		l1_ratio=Alphas,
 		fit_intercept=False,
-		alphas=np.arange(0, 1.01, 0.01),
+		alphas=np.arange(0, 1.01, 0.05),
 		selection='random',
 		cv=k).fit(trainX,trainY)
 	# reg = ElasticNetCV(
@@ -259,9 +259,6 @@ def sort_tabix_output(temp_path, out_path):
 	except subprocess.CalledProcessError as err:
 		raise err
 
-
-
-
 #############################################################
 # Startup for training jobs: get column header info, sampleIDs
 print('Reading genotype, expression file headers, sample IDs.\n')
@@ -283,14 +280,17 @@ else:
 	CV_trainID, CV_testID = None, None
 
 # PREP OUTPUT - print output headers to files
-print('Creating file: ' + args.tmp_weight_path + '\n')
+# print('Creating file: ' + args.tmp_weight_path + '\n')
+print('Creating file: ' + args.out_weight_path + '_header.txt' + '\n')
 weight_cols = ['CHROM','POS','snpID','REF','ALT','TargetID','MAF','p_HWE','ES']
-# pd.DataFrame(columns=weight_cols).to_csv(
-# 	args.tmp_weight_path,
-# 	header=True,
-# 	index=None,
-# 	sep='\t',
-# 	mode='w')
+pd.DataFrame(columns=weight_cols).to_csv(
+	args.out_weight_path + '_header.txt.gz',
+	header=True,
+	index=None,
+	sep='\t',
+	mode='w',
+	compression='gzip')
+
 
 print('Creating file: ' + args.out_info_path + '\n')
 info_cols = ['CHROM','GeneStart','GeneEnd','TargetID','GeneName','sample_size','n_snp','n_effect_snp','CVR2','TrainPVALUE','TrainR2','k-fold','alpha','Lambda','cvm','CVR2_threshold']

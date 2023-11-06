@@ -1,44 +1,10 @@
 #!/bin/bash
 
 
-
-# qsub -v weight1=GTEx_train_EN_weight -v weight2=ROSMAP_train_DPR_weight train_pred_srnaive.sh
-
-
-#weight1=GTEx_train_EN_weight${suffix}
-#weight2=ROSMAP_train_weight${suffix}
-
-# train_pred_srnaive.sh \
-# 	--weight1 GTEx_train_EN_weight \
-# 	--weight2 ROSMAP_train_DPR_weight \
-# 	--ncores ${ncores} \
-#   --suffix ${suffix}
-
-# weights=( )
-# weights_names=( )
-
 while [ $# -gt 0 ]; do
     if [[ $1 == *"--"* ]]; then
-        v="${1/--/}"
-        # if [[ $v == "weights" ]]; then
-        #     while [[ $2 != *"--"* ]]; do
-        #         if [[ $2 == "" ]]; then 
-        #             break;
-        #         fi
-        #         weights+=("$2")
-        #         shift
-        #     done
-        # elif [[ $v == "weights_names" ]]; then
-        #     while [[ $2 != *"--"* ]]; do
-        #         if [[ $2 == "" ]]; then 
-        #             break;
-        #         fi
-        #         weights_names+=("$2")
-        #         shift
-        #     done        
-        # else
-            declare $v="$2"
-        # fi
+      v="${1/--/}"
+      declare $v="$2"
     fi
     shift
 done
@@ -46,18 +12,8 @@ done
 
 suffix=${suffix:-''}
 
-
-
 ################
-
-# ncores=${NSLOTS:-1}
-
-############
-# load tabix
-# module load tabix/0.2.6
-
 # set directories
-# sim_dir=/mnt/YangFSS/data2/rparrish/SR_TWAS/sim
 TIGAR_dir=${sim_dir}/scripts/TIGAR_SR_sim
 expr_dir=${sim_dir}/expression
 out_dir_train=${sim_dir}/train/
@@ -67,14 +23,6 @@ out_dir_pred=${sim_dir}/pred/
 ############
 # NAIVE/SR TRAIN
 ############
-# load SR python env
-# source ${conda_path}
-# conda init bash
-# conda activate ${sr_env}
-# export PYTHONPATH=/home/rparrish/.conda/envs/py36/lib/python3.6/site-packages/
-# set the PYTHONPATH
-# export PYTHONPATH=${CONDA_PREFIX}/lib/python3.6/site-packages/:$PYTHONPATH
-
 # input sr training files
 weight1=${out_dir_train}/sims/${w1}${suffix}_train_weight
 weight2=${out_dir_train}/sims/${w2}${suffix}_train_weight
@@ -94,48 +42,33 @@ out_naive_weight_file=Naive-${w1}_${w2}${suffix}_train_weight
 out_naive_info_file=Naive-${w1}_${w2}${suffix}_train_info.txt
 log_file=SR_Naive-${w1}_${w2}${suffix}_train_log.txt
 
-
-python ${TIGAR_dir}/SR_TWAS_Naive_py.py \
---chr 19 \
---cvR2 1 \
---format 'DS' \
---gene_exp ${gene_exp} \
---genofile ${genofile} \
---genofile_type 'dosage' \
---out_weight_file ${out_weight_file} \
---out_info_file ${out_info_file} \
---out_naive_weight_file ${out_naive_weight_file} \
---out_naive_info_file ${out_naive_info_file} \
---log_file ${log_file} \
---SR_TWAS_dir ${TIGAR_dir} \
---maf_diff 0 \
---hwe 0.00001 \
---missing_rate 0.2 \
---naive 1 \
---sub_dir 'sims' \
---thread ${ncores} \
---train_sampleID ${valid_sampleID} \
---weights ${weight1} ${weight2} \
---out_dir ${out_dir_train}/
-
-
-mv ${out_dir_train}/sims/${out_naive_info_file} ${out_dir_train}/${out_naive_info_file}
-mv ${out_dir_train}/sims/${out_info_file} ${out_dir_train}/${out_info_file}
-
-
-# unload SR python env
-# conda deactivate
-
+echo 'Training 'SR-${w1}_${w2}' & 'Naive-${w1}_${w2}' models.'
+python ${TIGAR_dir}/SR-TWAS_Naive.py \
+	--chr 19 \
+	--cvR2 1 \
+	--format 'DS' \
+	--gene_exp ${gene_exp} \
+	--genofile ${genofile} \
+	--genofile_type 'dosage' \
+	--out_weight_file ${out_weight_file} \
+	--out_info_file ${out_info_file} \
+	--out_naive_weight_file ${out_naive_weight_file} \
+	--out_naive_info_file ${out_naive_info_file} \
+	--log_file ${log_file} \
+	--SR_TWAS_dir ${TIGAR_dir} \
+	--maf_diff 0 \
+	--hwe 0.00001 \
+	--missing_rate 0.2 \
+	--naive 1 \
+	--sub_dir 'sims' \
+	--thread ${ncores} \
+	--train_sampleID ${valid_sampleID} \
+	--weights ${weight1} ${weight2} \
+	--out_dir ${out_dir_train}/
 
 ############
 # PRED
 ############
-# load TIGAR python env
-# conda activate ${tigar_env}
-# export PYTHONPATH=/home/rparrish/.conda/envs/myenv/lib/python3.5/site-packages/
-# export PYTHONPATH=${CONDA_PREFIX}/lib/python3.5/site-packages/:$PYTHONPATH
-
-
 models=(Naive SR)
 for model in ${models[@]}; do
 
@@ -151,24 +84,22 @@ for model in ${models[@]}; do
 	out_pred_file=${model}-${w1}_${w2}${suffix}_pred.txt
 	log_file=${model}-${w1}_${w2}${suffix}_pred_log.txt
 
-
-	python ${TIGAR_dir}/Pred_py.py \
-	--chr 19 \
-	--weight ${weight} \
-	--gene_anno ${pred_gene_anno} \
-	--test_sampleID ${test_sampleID} \
-	--genofile ${pred_genofile} \
-	--format 'DS' \
-	--genofile_type 'dosage' \
-	--window 1000000 \
-	--thread ${ncores} \
-	--maf_diff 0 \
-	--missing_rate 0.2 \
-	--out_pred_file ${out_pred_file} \
-	--sub_dir 0 \
-	--TIGAR_dir ${TIGAR_dir} \
-	--log_file ${log_file} \
-	--out_dir ${out_dir_pred}
+	echo 'Running prediction for '${model}-${w1}_${w2}' model.'
+	python ${TIGAR_dir}/Pred.py \
+		--chr 19 \
+		--weight ${weight} \
+		--gene_anno ${pred_gene_anno} \
+		--test_sampleID ${test_sampleID} \
+		--genofile ${pred_genofile} \
+		--format 'DS' \
+		--genofile_type 'dosage' \
+		--window 1000000 \
+		--thread ${ncores} \
+		--maf_diff 0 \
+		--missing_rate 0.2 \
+		--out_pred_file ${out_pred_file} \
+		--TIGAR_dir ${TIGAR_dir} \
+		--log_file ${log_file} \
+		--out_dir ${out_dir_pred}
 
 done
-
