@@ -2,60 +2,77 @@
 
 # set options
 Sys.setlocale('LC_ALL', 'C')
-.libPaths('/home/rparrish/R/x86_64-redhat-linux-gnu-library/3.6')
+# .libPaths('/home/rparrish/R/x86_64-redhat-linux-gnu-library/3.6')
 options(stringsAsFactors=FALSE, digits=20)
 
 # load libraries
 library(doFuture)
 library(foreach)
 
-
-# set up parallel environment
-doFuture::registerDoFuture()
-# ncores <- availableCores(methods = 'SGE')
-# if (ncores > 2){
-# 	plan(future.batchtools::batchtools_sge)
-# } else {
-	plan(sequential)
-# }
-
 # load grguments
 args=(commandArgs(TRUE))
+cat(paste0('args:\n'))
 print(args)
 if(length(args)==0) {
 	stop("Error: No arguments supplied!")
+} else if(length(args)==4) {
+	sim_dir = as.character(args[[1]])
+	jobs = as.character(args[[2]])
+	suffix = ''
+	ncores = as.integer(args[[3]])
+	N_sims = as.integer(args[[4]])
 } else {
 	sim_dir = as.character(args[[1]])
 	jobs = as.character(args[[2]])
-	N_sims = as.integer(args[[3]])
-	suffix = as.character(args[[4]])
+	suffix = as.character(args[[3]])
+	ncores = as.integer(args[[4]])
+	N_sims = as.integer(args[[5]])
 }
 
-options(future.rng.onMisuse = "ignore")
+# set up parallel environment
+options(future.rng.onMisuse='ignore')
+registerDoFuture()
+if (ncores > 1){
+	pln <- plan(multicore, workers=ncores)
+	cat(paste0('Starting job with ', ncores, ' cores\n'))
+} else {
+	plan(sequential)
+}
 
-# N_sims=N_sims
+jobs <- strsplit(jobs, ',')[[1]]
 
 ## job format: 
 # [rosmap_prop_causal]_[gtex_prop_causal]_[gtex_prop_causal_overlap]_[rosmap_he2]_[gtex_he2]
 
 # # jobs should be comma separated list
-# jobs <- '0.001_0.001_0.5_0.1_0.1,0.001_0.001_0.5_0.2_0.2,0.001_0.001_0.5_0.5_0.5,0.01_0.01_0.5_0.1_0.1,0.01_0.01_0.5_0.2_0.2,0.01_0.01_0.5_0.5_0.5,0.05_0.05_0.5_0.1_0.1,0.05_0.05_0.5_0.2_0.2,0.05_0.05_0.5_0.5_0.5,0.1_0.1_0.5_0.1_0.1,0.1_0.1_0.5_0.2_0.2,0.1_0.1_0.5_0.5_0.5'
-
 # # suffix give unique name to jobs; could be date, batch, etc
 # suffix <- '_batch1'
 
-jobs <- strsplit(jobs, ',')[[1]]
+######################
+## MAIN PAPER
+# # half overlap snps, same heritability
+# jobs <- '0.001_0.001_0.5_0.1_0.1,0.001_0.001_0.5_0.2_0.2,0.001_0.001_0.5_0.5_0.5,0.01_0.01_0.5_0.1_0.1,0.01_0.01_0.5_0.2_0.2,0.01_0.01_0.5_0.5_0.5,0.05_0.05_0.5_0.1_0.1,0.05_0.05_0.5_0.2_0.2,0.05_0.05_0.5_0.5_0.5,0.1_0.1_0.5_0.1_0.1,0.1_0.1_0.5_0.2_0.2,0.1_0.1_0.5_0.5_0.5'
+# suffix <- ''
+
+### SUPPLEMENT JOBS
+# # same snps, same heritability
+# jobs <- '0.001_0.001_1_0.1_0.1,0.001_0.001_1_0.2_0.2,0.001_0.001_1_0.5_0.5,0.01_0.01_1_0.1_0.1,0.01_0.01_1_0.2_0.2,0.01_0.01_1_0.5_0.5,0.05_0.05_1_0.1_0.1,0.05_0.05_1_0.2_0.2,0.05_0.05_1_0.5_0.5,0.1_0.1_1_0.1_0.1,0.1_0.1_1_0.2_0.2,0.1_0.1_1_0.5_0.5'
+# suffix <- '_sameSNPsameHe'
+
+# # same snps, half heritability
+# jobs <- '0.001_0.001_1_0.1_0.05,0.001_0.001_1_0.2_0.1,0.001_0.001_1_0.5_0.25,0.01_0.01_1_0.1_0.05,0.01_0.01_1_0.2_0.1,0.01_0.01_1_0.5_0.25,0.05_0.05_1_0.1_0.05,0.05_0.05_1_0.2_0.1,0.05_0.05_1_0.5_0.25,0.1_0.1_1_0.1_0.05,0.1_0.1_1_0.2_0.1,0.1_0.1_1_0.5_0.25'
+# suffix <- '_sameSNPhalfHe'
+######################
+
 
 ######################
-# set directory
-# sim_dir <- '/mnt/YangFSS/data2/rparrish/SR_TWAS/sim/'
-
-# calculate MAF
+## FUNCTIONS
+######################
+# calculate/impute MAF
 calc_maf <- function(x){
 	maf <- sum(x, na.rm=TRUE) / (2 * (length(x) - sum(is.nan(x))))
 	return(maf)
 }
-# MAF <- apply(both[,-1], 1, calc_maf)
 
 impute_maf <- function(df){
 	if (any(is.na(df))) {
@@ -72,10 +89,16 @@ get_sampleids <- function(dataset){
 	return(sampleids)
 }
 
+# read in genotype data
 get_gt <- function(dataset){
 	path <- paste0(sim_dir, 'genotype/', dataset, '_ABCA7_raw.dosage.gz')
 	gt <- read.delim(con <- gzfile(path, 'r'), check.names=FALSE); close(con)
 	return(gt)
+}
+
+# minor rounding issues can mean n=length(x)+1 or n=-1
+safe_sample <- function(x, n){ 
+	sample(x, min(length(x), max(0, n)))
 }
 
 # set sampleids list
@@ -84,6 +107,7 @@ sampleid <- list(
 	'ROSMAP' = get_sampleids('ROSMAP')
 	)
 
+# set genotype list
 gt <- list(
 	'GTEx' = get_gt('GTEx'),
 	'ROSMAP' = get_gt('ROSMAP')
@@ -94,11 +118,11 @@ both <- merge(gt[['GTEx']][, c('snpID', sampleid[['GTEx']])],
 	gt[['ROSMAP']][,c('snpID', sampleid[['ROSMAP']])],
 	by='snpID', all=TRUE)
 
-out_dir <- paste0(sim_dir, 'expression/raw_dosage/')
+out_dir <- paste0(sim_dir, 'expression/')
 
 # cat('Expression files in this directory calculated from rosmap_pc proportion of the 5924 total SNPs found in data; causal SNPs may be missing from one of the datasets; if SNP not found in dataset, MAF imputation was used in generating the file.', file=paste0(out_dir, 'note.txt'), sep='\n')
 
-### OUTPUT COLUMN NAMES OF THE ALL EXPRESSION FILES
+### OUTPUT HEADERS OF THE ALL EXPRESSION FILES
 info_out_cols <- c('CHROM', 'GeneStart', 'GeneEnd', 'TargetID', 'GeneName')
 
 cat(paste(c(info_out_cols, sampleid[['GTEx']], sampleid[['ROSMAP']]), 
@@ -116,25 +140,30 @@ cat(paste(c(info_out_cols, sampleid[['ROSMAP']]),
 # get gene expression
 get_expr <- function(expr, he2) {
 	if (he2 == 0) {
-		expr <- rnorm(length(expr), mean=0, sd=1)
-		error_term <- rnorm(length(expr), mean=0, sd=1)
+		expr <- rnorm(length(expr), mean = 0, sd = 1)
+		error_term <- rnorm(length(expr), mean = 0, sd = 1)
 		expr_raw <- t(expr + error_term)
 	} else {
 		# gamma^2 x var(X*B) = X*b * heritability
 		gamma <- as.vector(sqrt(he2 / var(expr)))
 		expr_1 <- gamma * expr
 		# Error term = N(0, 1 - he^2)
-		error_term <- rnorm(length(expr_1), mean=0, 
-			sd=sqrt(1 - he2))
+		error_term <- rnorm(length(expr_1), mean = 0, 
+			sd = sqrt(1 - he2))
 		expr_raw <- t(expr_1 + error_term)
 	}
 	return(expr_raw)
 }
 
-set.seed(123456)
+######################
+## DO SIMULATION
+######################
+
+set.seed(654321)
 
 for (job in jobs){
 
+	# get job params; then find causal snps to use
 	job_list <- as.numeric(strsplit(job,'_')[[1]])
 	
 	rosmap_pc <- job_list[1]
@@ -160,17 +189,17 @@ for (job in jobs){
 	n_gtex_true_causal_overlap <- floor(n_gtex_true_causal * gtex_poverlap)
 	n_gtex_true_causal_other <- n_gtex_true_causal - n_gtex_true_causal_overlap
 
-	n_rosmap_true_causal_overlap <- sample(n_gtex_true_causal_overlap:n_rosmap_true_causal, 1)
+	n_rosmap_true_causal_overlap <- safe_sample(n_gtex_true_causal_overlap:n_rosmap_true_causal, 1)
 	n_rosmap_true_causal_other <- n_rosmap_true_causal - n_rosmap_true_causal_overlap
 
 	## get rosmap true causal snps
-	rosmap_true_causal_overlap <- sample(overlap_snps, n_rosmap_true_causal_overlap)
-	rosmap_true_causal_other <- sample(setdiff(rosmap_snps, rosmap_true_causal_overlap), n_rosmap_true_causal_other)
+	rosmap_true_causal_overlap <- safe_sample(overlap_snps, n_rosmap_true_causal_overlap)
+	rosmap_true_causal_other <- safe_sample(setdiff(rosmap_snps, rosmap_true_causal_overlap), n_rosmap_true_causal_other)
 	rosmap_true_causal <- sort(c(rosmap_true_causal_overlap, rosmap_true_causal_other))
 
 	## get gtex true causal snps
-	gtex_true_causal_overlap <- sample(intersect(rosmap_true_causal, gtex_snps), n_gtex_true_causal_overlap)
-	gtex_true_causal_other <- sample(setdiff(gtex_snps, gtex_true_causal_overlap), n_gtex_true_causal_other)
+	gtex_true_causal_overlap <- safe_sample(intersect(rosmap_true_causal, gtex_snps), n_gtex_true_causal_overlap)
+	gtex_true_causal_other <- safe_sample(setdiff(gtex_snps, gtex_true_causal_overlap), n_gtex_true_causal_other)
 	gtex_true_causal <- sort(c(gtex_true_causal_overlap, gtex_true_causal_other))
 
 	## overlap true causal
@@ -193,10 +222,12 @@ for (job in jobs){
 	gtex_only_snp_mat <- t(as.matrix(both_imputed[both_imputed$snpID %in% gtex_only_true_causal, -1]))[sampleid[['GTEx']],]
 
 	######################
+	## SIMULATE EXPRESSION FOR SNPS N_sims TIMES
+	######################
 	# start time
 	start_time <- Sys.time()
 
-	# do N_sims simulations
+	# do N_sims simulations/different expression
 	expr_sims <- foreach(i=1:N_sims, .combine=rbind) %dopar% {
 
 		# simulate effect size \beta from N(0,1)
@@ -217,17 +248,16 @@ for (job in jobs){
 		rosmap_expr <- get_expr(expr_rosmap_0, rosmap_he2)
 		gtex_expr <- get_expr(expr_gtex_0, gtex_he2)
 		
-		# gtex_expr <- get_expr(expr_0[sampleid[['GTEx']],], gtex_he2)
-		# rosmap_expr <- get_expr(expr_0[sampleid[['ROSMAP']],], rosmap_he2)
-
 		expr_raw <- cbind(rosmap_expr, gtex_expr)
 
 		target_id <- paste(job, as.character(i), sep='_')
 
 		expr <- data.frame('TargetID'=target_id, expr_raw, check.names=FALSE)
 
-	} %seed% 1234567
+	} %seed% 6543217
 
+	######################
+	## OUTPUT
 	######################
 	# set up gene info dataframe
 	info_df <- data.frame('CHROM'=19, 'GeneStart'=1040101, 'GeneEnd'=1065572, 'GeneName'='ABCA7')
@@ -250,6 +280,7 @@ for (job in jobs){
 		col.names=FALSE,
 		sep='\t')
 
+	# output to individual dataset files
 	for (dataset in c('GTEx', 'ROSMAP')){
 		# combine info_df and expr_sim, put columns in order
 		out_cols <- c(info_out_cols, sampleid[[dataset]])
@@ -268,6 +299,6 @@ for (job in jobs){
 
 	# time elapsed
 	end_time <- Sys.time()
-	print(paste("Computation time: ", end_time - start_time))
+	cat(paste('Computation time:', end_time - start_time, '\n'))
 
 }

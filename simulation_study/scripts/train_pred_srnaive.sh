@@ -59,7 +59,7 @@ suffix=${suffix:-''}
 # set directories
 # sim_dir=/mnt/YangFSS/data2/rparrish/SR_TWAS/sim
 TIGAR_dir=${sim_dir}/scripts/TIGAR_SR_sim
-expr_dir=${sim_dir}/expression/raw_dosage
+expr_dir=${sim_dir}/expression
 out_dir_train=${sim_dir}/train/
 out_dir_pred=${sim_dir}/pred/
 
@@ -68,22 +68,32 @@ out_dir_pred=${sim_dir}/pred/
 # NAIVE/SR TRAIN
 ############
 # load SR python env
-source ${conda_path}
+# source ${conda_path}
 # conda init bash
-conda activate ${sr_env}
+# conda activate ${sr_env}
 # export PYTHONPATH=/home/rparrish/.conda/envs/py36/lib/python3.6/site-packages/
 # set the PYTHONPATH
-export PYTHONPATH=${CONDA_PREFIX}/lib/python3.6/site-packages/:$PYTHONPATH
+# export PYTHONPATH=${CONDA_PREFIX}/lib/python3.6/site-packages/:$PYTHONPATH
 
+# input sr training files
+weight1=${out_dir_train}/sims/${w1}${suffix}_train_weight
+weight2=${out_dir_train}/sims/${w2}${suffix}_train_weight
 
-weight1_file=${out_dir_train}/sims/${weight1}
-weight2_file=${out_dir_train}/sims/${weight2}
+weight1_name=${w1}${suffix}
+weight2_name=${w2}${suffix}
 
-out_weight_file=SR_train_weight${suffix}
-out_info_file=SR_train_info${suffix}.txt
-out_naive_weight_file=Naive_train_weight${suffix}
-out_naive_info_file=Naive_train_info${suffix}.txt
-log_file=SR_Naive_train_log${suffix}.txt
+# sampleid and genotype/expression files
+valid_sampleID=${sim_dir}/sampleid/ROSMAP_valid_400_sampleid.txt
+genofile=${sim_dir}/genotype/ROSMAP_ABCA7_raw.dosage.gz
+gene_exp=${expr_dir}/ROSMAP_expr${suffix}.txt
+
+# output files
+out_weight_file=SR-${w1}_${w2}${suffix}_train_weight
+out_info_file=SR-${w1}_${w2}${suffix}_train_info.txt
+out_naive_weight_file=Naive-${w1}_${w2}${suffix}_train_weight
+out_naive_info_file=Naive-${w1}_${w2}${suffix}_train_info.txt
+log_file=SR_Naive-${w1}_${w2}${suffix}_train_log.txt
+
 
 python ${TIGAR_dir}/SR_TWAS_Naive_py.py \
 --chr 19 \
@@ -102,11 +112,11 @@ python ${TIGAR_dir}/SR_TWAS_Naive_py.py \
 --hwe 0.00001 \
 --missing_rate 0.2 \
 --naive 1 \
---sub_dir 0 \
+--sub_dir 'sims' \
 --thread ${ncores} \
 --train_sampleID ${valid_sampleID} \
---weights ${weight1_file} ${weight2_file} \
---out_dir ${out_dir_train}/sims/
+--weights ${weight1} ${weight2} \
+--out_dir ${out_dir_train}/
 
 
 mv ${out_dir_train}/sims/${out_naive_info_file} ${out_dir_train}/${out_naive_info_file}
@@ -114,33 +124,32 @@ mv ${out_dir_train}/sims/${out_info_file} ${out_dir_train}/${out_info_file}
 
 
 # unload SR python env
-conda deactivate
+# conda deactivate
 
 
 ############
 # PRED
 ############
 # load TIGAR python env
-conda activate ${tigar_env}
+# conda activate ${tigar_env}
 # export PYTHONPATH=/home/rparrish/.conda/envs/myenv/lib/python3.5/site-packages/
-export PYTHONPATH=${CONDA_PREFIX}/lib/python3.5/site-packages/:$PYTHONPATH
+# export PYTHONPATH=${CONDA_PREFIX}/lib/python3.5/site-packages/:$PYTHONPATH
 
 
 models=(Naive SR)
 for model in ${models[@]}; do
 
 	# from training
-	weight=${out_dir_train}/sims/${model}_train_weight${suffix}
-	pred_gene_anno=${out_dir_train}/${model}_train_info${suffix}.txt
-
+	weight=${out_dir_train}/sims/${model}-${w1}_${w2}${suffix}_train_weight
+	pred_gene_anno=${out_dir_train}/${model}-${w1}_${w2}${suffix}_train_info.txt
 
 	# test data
 	test_sampleID=${sim_dir}/sampleid/ROSMAP_test_800_sampleid.txt
 	pred_genofile=${sim_dir}/genotype/ROSMAP_ABCA7_raw.dosage.gz
 
 	# set names of output files
-	out_pred_file=${model}_pred${suffix}.txt
-	log_file=${model}_pred_log${suffix}.txt
+	out_pred_file=${model}-${w1}_${w2}${suffix}_pred.txt
+	log_file=${model}-${w1}_${w2}${suffix}_pred_log.txt
 
 
 	python ${TIGAR_dir}/Pred_py.py \
@@ -162,24 +171,4 @@ for model in ${models[@]}; do
 	--out_dir ${out_dir_pred}
 
 done
-
-
-
-# unload TIGAR python env
-conda deactivate
-
-########################
-# unload tabix
-# module unload tabix/0.2.6
-
-
-
-# ########################
-# # setup pred results
-# Rscript /mnt/YangFSS/data2/rparrish/SR_TWAS/sim/scripts/scenarios2_pred_results_setup.R
-
-# ########################
-# # get pred results
-# Rscript /mnt/YangFSS/data2/rparrish/SR_TWAS/sim/scripts/scenarios2_pred_results.R
-
 

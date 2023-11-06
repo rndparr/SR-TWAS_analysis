@@ -19,23 +19,26 @@ while [ $# -gt 0 ]; do
 done
 
 
+jobsuff=${jobsuff:-''}
 suffix=${suffix:-''}
+sampleid=${sampleid:-train_465}
 
 # ncores=${NSLOTS:-1}
 
 ############
 # load modules
 # module load tabix/0.2.6
-source ${conda_path}
+# source ${conda_path}
 # conda init bash
-conda activate ${tigar_env}
+# conda activate ${tigar_env}
 # export PYTHONPATH=/home/rparrish/.conda/envs/myenv/lib/python3.5/site-packages/
-export PYTHONPATH=${CONDA_PREFIX}/lib/python3.5/site-packages/:$PYTHONPATH
+# export PYTHONPATH=${CONDA_PREFIX}/lib/python3.5/site-packages/:$PYTHONPATH
 
 # set directories
 # sim_dir=/mnt/YangFSS/data2/rparrish/SR_TWAS/sim
+
 TIGAR_dir=${sim_dir}/scripts/TIGAR_SR_sim/
-expr_dir=${sim_dir}/expression/raw_dosage
+expr_dir=${sim_dir}/expression
 
 
 ############
@@ -44,28 +47,18 @@ expr_dir=${sim_dir}/expression/raw_dosage
 
 # input files
 Gene_Exp_train_file=${expr_dir}/${dataset}_expr${suffix}.txt
-train_sample_path=${sim_dir}/sampleid/${dataset}_train_465_sampleid.txt
+train_sample_path=${sim_dir}/sampleid/${dataset}_${sampleid}_sampleid.txt
 geno_file_path=${sim_dir}/genotype/${dataset}_ABCA7_raw.dosage.gz
 
 
 # output files
-out_dir_train=${sim_dir}/train/
-
-# if [[ "$train_model"x == "DPR"x ]]; then
-# 	model_str=''
-# elif [[ "$train_model"x == "EN"x ]]; then
-# 	model_str=_EN
-# fi
-
-out_weight_file=${dataset}_train_${train_model}_weight${suffix}
-out_info_file=${dataset}_train_${train_model}_info${suffix}.txt
-log_file=${dataset}_train_${train_model}_log${suffix}.txt
-
-out_pred_file=${dataset}_${train_model}_pred${suffix}.txt
-log_file=${dataset}_${train_model}_pred_log${suffix}.txt
+out_weight_file=${train_model}-${dataset}${jobsuff}${suffix}_train_weight
+out_info_file=${train_model}-${dataset}${jobsuff}${suffix}_train_info.txt
+log_file=${train_model}-${dataset}${jobsuff}${suffix}_train_log.txt
+job_suf=${dataset}_${sampleid}${suffix}
 
 
-if [[ "$train_model"x == "DPR"x ]]; then
+if [[ "$train_model"x == "TIGAR"x ]]; then
 
 	job_suf=${dataset}
 
@@ -88,12 +81,12 @@ if [[ "$train_model"x == "DPR"x ]]; then
 	--log_file ${log_file} \
 	--job_suf ${job_suf} \
 	--TIGAR_dir ${TIGAR_dir} \
-	--sub_dir 0 \
+	--sub_dir 'sims' \
 	--out_dir ${out_dir_train}/sims
 
 
 
-elif [[ "$train_model"x == "EN"x ]]; then
+elif [[ "$train_model"x == "PrediXcan"x ]]; then
 
 	python ${TIGAR_dir}/Train_EN_2.py \
 	--gene_exp ${Gene_Exp_train_file} \
@@ -112,7 +105,7 @@ elif [[ "$train_model"x == "EN"x ]]; then
 	--out_info_file ${out_info_file} \
 	--log_file ${log_file} \
 	--TIGAR_dir ${TIGAR_dir} \
-	--sub_dir 0 \
+	--sub_dir 'sims' \
 	--out_dir ${out_dir_train}/sims
 
 fi
@@ -131,7 +124,13 @@ pred_gene_anno=${out_dir_train}/${out_info_file}
 test_sampleID=${sim_dir}/sampleid/ROSMAP_test_800_sampleid.txt
 pred_genofile=${sim_dir}/genotype/ROSMAP_ABCA7_raw.dosage.gz
 
+
+# set names of output files
 out_dir_pred=${sim_dir}/pred/
+out_pred_file=${train_model}-${dataset}${jobsuff}${suffix}_pred.txt
+log_file=${train_model}-${dataset}${jobsuff}${suffix}_pred_log.txt
+
+
 
 python ${TIGAR_dir}/Pred_py.py \
 	--chr 19 \

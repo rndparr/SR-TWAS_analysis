@@ -1,146 +1,152 @@
 
 
 
-# weights=( )
-# weights_names=( )
-
-# while [ $# -gt 0 ]; do
-#     if [[ $1 == *"--"* ]]; then
-#         v="${1/--/}"
-#         if [[ $v == "weights" ]]; then
-#             while [[ $2 != *"--"* ]]; do
-#                 if [[ $2 == "" ]]; then 
-#                     break;
-#                 fi
-#                 weights+=("$2")
-#                 shift
-#             done
-#         elif [[ $v == "weights_names" ]]; then
-#             while [[ $2 != *"--"* ]]; do
-#                 if [[ $2 == "" ]]; then 
-#                     break;
-#                 fi
-#                 weights_names+=("$2")
-#                 shift
-#             done        
-#         else
-#             declare $v="$2"
-#         fi
-#     fi
-#     shift
-# done
-
-# suffix=_test
-
-
-
-## load modules
-# module load tabix/0.2.6
 
 ############
-# setup
+## SET UP
 ############
+sim_dir='/home/rparrish/github/SR-TWAS_analysis/simulation_study/'
+cd ${sim_dir}/scripts
 
-sim_dir=/Users/randyparr/github/SR-TWAS_analysis/simulation_study
-scripts_dir=${sim_dir}/scripts
-# cd ${sim_dir}
-
-suffix=_batch1
+N_sim=1000
 ncores=1
-jobs='0.01_0.01_0.5_0.5_0.5'
-N_sim=10
+suffix=''
 
+ggplot2_lib='/home/rparrish/lib/R/ggplot2_3.3.0'
+# library(devtools); install_version('ggplot2', version = '3.3.0', lib='/home/rparrish/lib/R/ggplot2_3.3.0')
 
-
-conda_path=/opt/anaconda3/etc/profile.d/conda.sh
-tigar_env=tigarenv
-sr_env=py36
-
-############
-## make executable
-############
-chmod 755 ${scripts_dir}/TIGAR_SR_sim/DPR
-chmod 755 ${scripts_dir}/train_pred_base.sh
-chmod 755 ${scripts_dir}/train_pred_srnaive.sh
-chmod 755 ${scripts_dir}/simulate_expression.R
-
+# variables for generating jobs_list (see section for details)
+prop_causal_snps=(0.01 0.05)
+expr_hes=(0.2 0.5)
+overlap=1
+gtex_prop_causal_factor=1
+gtex_expr_he_factor=1
 
 ############
-## Get expression
+## load modules/python
 ############
-# # genotype only
-# paste0(sim_dir, 'genotype/', dataset, '_ABCA7_raw.dosage.gz')
-RScript ${scripts_dir}/simulate_expression.R ${sim_dir}/ ${jobs} ${N_sim} ${suffix}
+module load tabix/0.2.6
+conda activate py36
+export PYTHONPATH=/home/rparrish/.conda/envs/py36/lib/python3.6/site-packages/
 
+############
+## generate jobs list
+############
+## for plotting purposes, all jobs in a "batch" of jobs is assumed to have: 
+	#* constant % of overlapped causal SNPs
+	#* constant proportion (ROSMAP proportion of causal SNPs):(GTEx proportion of causal SNPs)
+	#* constant proportion (ROSMAP heritability):(GTEx heritability) 
+	#* all combinations of (ROSMAP prop_causal)*(ROSMAP expression heritability)
+jobs_list=''
+calc() { awk "BEGIN{print $*}"; }
+for prop_causal_snp in ${prop_causal_snps[@]}; do
+	gtex_prop_causal_snp=`calc ${prop_causal_snp}*${gtex_prop_causal_factor}`
+	str_1=${prop_causal_snp}_${gtex_prop_causal_snp}_${overlap}
+	for expr_he in ${expr_hes[@]}; do
+		gtex_expr_he=`calc ${expr_he}*${gtex_expr_he_factor}`
+		str_2=${expr_he}_${gtex_expr_he}
+		jobs_list=`echo ${jobs_list},${str_1}_${str_2}`
+	done
+done
+# remove extra comma at begginning of string
+jobs_list="${jobs_list:1}"
+echo $jobs_list
+
+############
+## simulate expression
+############
+# R packages: doFuture, foreach
+Rscript simulate_expression.R ${sim_dir} ${jobs_list} ${suffix} ${ncores} ${N_sim}
 
 ############
 ## train/pred base models
 ############
-# ROSMAP_DPR
-# ${scripts_dir}/train_pred_base.sh \
-# 	--sim_dir ${sim_dir} \
-# 	--conda_path ${conda_path} \
-# 	--tigar_env ${tigar_env} \
-# 	--dataset ROSMAP \
-# 	--train_model DPR \
-# 	--ncores ${ncores} \
-# 	--suffix ${suffix}
-
-${scripts_dir}/train_pred_base.sh \
+# TIGAR-ROSMAP
+train_pred_base.sh \
 	--sim_dir ${sim_dir} \
-	--conda_path ${conda_path} \
-	--tigar_env ${tigar_env} \
-	--dataset ROSMAP \
-	--train_model EN \
+	--train_model 'TIGAR' \
+	--dataset 'ROSMAP' \
+	--sampleid 'train_465' \
 	--ncores ${ncores} \
 	--suffix ${suffix}
 
-
-# GTEx_EN
-${scripts_dir}/train_pred_base.sh \
+# PrediXcan-GTEx
+train_pred_base.sh \
 	--sim_dir ${sim_dir} \
-	--conda_path ${conda_path} \
-	--tigar_env ${tigar_env} \
-	--dataset GTEx \
-	--train_model EN \
+	--train_model 'PrediXcan' \
+	--dataset 'GTEx' \
+	--sampleid 'train_465' \
 	--ncores ${ncores} \
 	--suffix ${suffix}
+	
+# TIGAR-ROSMAP-valid
+train_pred_base.sh \
+	--sim_dir ${sim_dir} \
+	--train_model 'TIGAR' \
+	--dataset 'ROSMAP' \
+	--sampleid 'valid_400' \
+	--jobsuff '_valid' \
+	--ncores ${ncores} \
+	--suffix ${suffix}
+
 
 ############
 ## train/pred sr-naive models
 ############
-${scripts_dir}/train_pred_srnaive.sh \
+train_pred_srnaive.sh \
 	--sim_dir ${sim_dir} \
-	--conda_path ${conda_path} \
-	--sr_env ${sr_env} \
-	--tigar_env ${tigar_env} \
-	--weight1 GTEx_train_EN_weight \
-	--weight2 ROSMAP_train_EN_weight \
+	--w1 'TIGAR-ROSMAP' \
+	--w2 'PrediXcan-GTEx' \
 	--ncores ${ncores} \
 	--suffix ${suffix}
 
+
 ############
-## pred results
+## train/pred avg-novalid models
 ############
-combine_pred.sh
+train_pred_avg-novalid.sh \
+	--sim_dir ${sim_dir} \
+	--w1 'TIGAR-ROSMAP_valid' \
+	--w2 'SR-TIGAR-ROSMAP_PrediXcan-GTEx' \
+	--ncores ${ncores} \
+	--suffix ${suffix}
 
-pred_results_setup.R
 
-# power
-pred_results.R 
+############
+## combine pred results
+############
+datasets=(TIGAR-ROSMAP TIGAR-ROSMAP_valid PrediXcan-GTEx Naive-TIGAR-ROSMAP_PrediXcan-GTEx SR-TIGAR-ROSMAP_PrediXcan-GTEx Avg-SRbasevalid)
+
+# add header to output file
+head -n1 ${dir}/${datasets[0]}_pred.txt | \
+awk 'BEGIN { FS = OFS = "\t" } {print "dataset\t"$0'} \
+	> ${dir}/all_pred_results${suffix}.txt
+
+# add data to output file
+for dataset in ${datasets[@]}; do
+	path=${dir}/${dataset}${suffix}_pred.txt
+	tail -n+2 ${path} | \
+	awk -v dataset=${dataset} 'BEGIN { FS = OFS = "\t" } {print dataset"\t"$0}' \
+	>> ${dir}/all_pred_results${suffix}.txt
+done
 
 
+############
+## results
+############
+# R packages: doFuture, foreach, reshape2
+Rscript results_setup.R ${sim_dir} ${suffix} ${ncores}
 
 
 ############
 ## plot results
 ############
-plot_setup.R
-
-plot_both.R
-
+# reqires packages: ggsci, grid, gtable, gridExtra, paletteer, reshape2, ggplot2 v3.3.0
+Rscript plots.R ${sim_dir} ${suffix} ${ggplot2_lib}
 
 
+########################
 module unload tabix/0.2.6
+conda deactivate
 
 

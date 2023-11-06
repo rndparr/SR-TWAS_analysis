@@ -1,0 +1,8 @@
+
+*/.DS_Store
+*/._*
+
+simulation_study/scripts/._*
+simulation_study/train/sims/logs/._*
+simulation_study/scripts/TIGAR_SR_sim/__pycache__
+simulation_study/scripts/TIGAR_SR_sim/._*

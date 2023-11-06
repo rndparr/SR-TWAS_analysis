@@ -61,7 +61,7 @@ parser.add_argument('--log_file', type=str, default='')
 parser.add_argument('--out_prefix', type=str, default='')
 parser.add_argument('--out_info_file', type=str, default='')
 parser.add_argument('--out_weight_file', type=str, default='')
-parser.add_argument('--sub_dir', type=int, choices=[0, 1], default=1)
+parser.add_argument('--sub_dir', type=str, default='')
 parser.add_argument('--thread', type=int, default=1)
 parser.add_argument('--train_sampleID', type=str, dest='sampleid_path')
 parser.add_argument('--window', type=int, default=1000000)
@@ -87,7 +87,7 @@ if not args.job_suf:
 
 # sub-directory in out directory
 if args.sub_dir:
-	out_sub_dir = os.path.join(args.out_dir, 'EN_CHR' + args.chrm)
+	out_sub_dir = os.path.join(args.out_dir, args.sub_dir)
 else:
 	out_sub_dir = args.out_dir
 
