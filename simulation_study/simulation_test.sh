@@ -1,5 +1,4 @@
-
-
+#!/bin/bash
 
 
 ############
@@ -7,6 +6,9 @@
 ############
 sim_dir='/home/rparrish/github/SR-TWAS_analysis/simulation_study'
 cd ${sim_dir}/scripts
+
+# set up directories
+mkdir -p ${sim_dir}/{pred/logs,power/data,plot,train/{sims,logs}}
 
 ## number of cores for scripts that can run in parallel
 ncores=1
