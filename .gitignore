@@ -10,29 +10,30 @@
 
 simulation_study/.DS_Store
 simulation_study/._*
+
 simulation_study/scripts/.DS_Store
 simulation_study/scripts/._*
-
-
-
 simulation_study/scripts/TIGAR_SR_sim/__pycache__
 simulation_study/scripts/TIGAR_SR_sim/._*
 simulation_study/scripts/scrap/*
 
+simulation_study/expression/.DS_Store
 simulation_study/expression/*.txt
 
-simulation_study/
 simulation_study/train/*.txt
 simulation_study/train/logs/*.txt
 simulation_study/train/sims/*.txt.gz
 simulation_study/train/sims/*.txt.gz.tbi
 
+simulation_study/pred/.DS_Store
 simulation_study/pred/*.txt
 simulation_study/pred/logs/*.txt
 
+simulation_study/power/.DS_Store
 simulation_study/power/*.txt
 simulation_study/power/data/*.Rdata
 
+simulation_study/plot/.DS_Store
 simulation_study/plot/*.jpeg
 simulation_study/plot/Rplots.pdf
 simulation_study/plot/*.Rdata
