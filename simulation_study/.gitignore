@@ -1,5 +1,10 @@
+
 genotype/GTEx_ABCA7_raw.dosage.gz
 genotype/GTEx_ABCA7_raw.dosage.gz.tbi
-
 genotype/ROSMAP_ABCA7_raw.dosage.gz
 genotype/ROSMAP_ABCA7_raw.dosage.gz.tbi
+
+sampleid/GTEx_sampleid.txtsampleid/GTEx_train_465_sampleid.txt
+sampleid/ROSMAP_sampleid.txt
+sampleid/ROSMAP_valid_400_sampleid.txtsampleid/ROSMAP_train_465_sampleid.txtsampleid/ROSMAP_test_800_sampleid.txt
+
