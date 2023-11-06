@@ -83,7 +83,6 @@ elif [[ "$train_model"x == "PrediXcan"x ]]; then
 
 fi
 
-
 ############
 # PRED
 ############

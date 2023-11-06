@@ -21,7 +21,7 @@ simulation_study/scripts/scrap/*
 
 simulation_study/expression/*.txt
 
-simulation_study/train/
+simulation_study/
 simulation_study/train/*.txt
 simulation_study/train/logs/*.txt
 simulation_study/train/sims/*.txt.gz
