@@ -16,9 +16,10 @@ sampleid=${sampleid:-train_465}
 
 ############
 # set directories
-TIGAR_dir=${sim_dir}/scripts/TIGAR_SR_sim/
-expr_dir=${sim_dir}/expression
-out_dir_train=${sim_dir}/train/
+TIGAR_dir=${TIGAR_dir:-${sim_dir}/scripts/TIGAR_SR_sim}
+expr_dir=${expr_dir:-${sim_dir}/expression}
+out_dir_train=${out_dir_train:-${sim_dir}/train/}
+out_dir_pred=${out_dir_pred:-${sim_dir}/pred/}
 
 ############
 # TRAIN
@@ -95,7 +96,6 @@ test_sampleID=${sim_dir}/sampleid/ROSMAP_test_800_sampleid.txt
 pred_genofile=${sim_dir}/genotype/ROSMAP_ABCA7_raw.dosage.gz
 
 # set names of output files
-out_dir_pred=${sim_dir}/pred/
 out_pred_file=${train_model}-${dataset}${jobsuff}${suffix}_pred.txt
 log_file=${train_model}-${dataset}${jobsuff}${suffix}_pred_log.txt
 

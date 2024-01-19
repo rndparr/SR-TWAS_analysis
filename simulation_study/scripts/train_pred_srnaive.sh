@@ -14,10 +14,10 @@ suffix=${suffix:-''}
 
 ################
 # set directories
-TIGAR_dir=${sim_dir}/scripts/TIGAR_SR_sim
-expr_dir=${sim_dir}/expression
-out_dir_train=${sim_dir}/train/
-out_dir_pred=${sim_dir}/pred/
+TIGAR_dir=${TIGAR_dir:-${sim_dir}/scripts/TIGAR_SR_sim}
+expr_dir=${expr_dir:-${sim_dir}/expression}
+out_dir_train=${out_dir_train:-${sim_dir}/train/}
+out_dir_pred=${out_dir_pred:-${sim_dir}/pred/}
 
 
 ############
