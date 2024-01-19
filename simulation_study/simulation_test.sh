@@ -152,6 +152,101 @@ Rscript ./results_setup.R ${sim_dir}/ ${suffix} ${ncores}
 # reqires packages: ggsci, grid, gtable, gridExtra, paletteer, reshape2, ggplot2 v3.3.0
 Rscript ./plots.R ${sim_dir}/ ${suffix} ${ggplot2_lib}
 
+# zetas plots
+Rscript ./plots.R ${sim_dir}/ ${suffix} "settingname"
+
+# # zetas plots for multiple settings with suffixed '', '_1', '_2':
+# Rscript ./plots.R ${sim_dir}/ ",_1,_2" "0,2,1"
+
+############
+## type 1 error analysis
+############
+
+# set up directories
+type1error_dir=${sim_dir}/type1_error/0.1_0.1_0.5_0.1_0.1_667${suffix}
+mkdir -p ${type1error_dir}/{pred/{logs,target_files},results}
+
+
+## 
+Rscript ./type1error.R ${sim_dir}/ ${suffix} "0.1_0.1_0.5_0.1_0.1" "667"
+
+# ### run train/pred jobs
+# --expr_dir ${type1error_dir} \
+# --out_dir_train ${type1error_dir}/train \
+# --out_dir_pred ${type1error_dir}/pred
+
+# ${type1error_dir}/
+
+############
+## train/pred sr-naive models
+############
+# Naive-TIGAR-ROSMAP_PrediXcan-GTEx
+# SR-TIGAR-ROSMAP_PrediXcan-GTEx
+./train_pred_srnaive.sh \
+	--sim_dir ${sim_dir} \
+	--w1 'TIGAR-ROSMAP' \
+	--w2 'PrediXcan-GTEx' \
+	--ncores ${ncores} \
+	--expr_dir ${type1error_dir} \
+	--out_dir_train ${type1error_dir}/train \
+	--out_dir_pred ${type1error_dir}/pred \
+	--suffix ${suffix}
+
+# Avg-SRbasevalid
+./train_pred_avg-novalid.sh \
+	--sim_dir ${sim_dir} \
+	--w1 'TIGAR-ROSMAP_valid' \
+	--w2 'SR-TIGAR-ROSMAP_PrediXcan-GTEx' \
+	--ncores ${ncores} \
+	--expr_dir ${type1error_dir} \
+	--out_dir_train ${type1error_dir}/train \
+	--out_dir_pred ${type1error_dir}/pred \
+	--suffix ${suffix}
+
+### split pred
+type1error_pred_split_dir=${type1error_dir}/pred/split_files
+
+datasets=(TIGAR-ROSMAP TIGAR-ROSMAP_valid PrediXcan-GTEx Naive-TIGAR-ROSMAP_PrediXcan-GTEx SR-TIGAR-ROSMAP_PrediXcan-GTEx Avg-SRbasevalid)
+
+for i in `seq 1 6`; do
+	# split into files by sample
+	awk -v dataset=${dataset} -v type1error_pred_split_dir=${type1error_pred_split_dir} 'BEGIN { FS = OFS = "\t" }{
+		# print header
+		if ($0 ~ /^CHROM/){
+			split($0, h, "\t");
+			# print files list 
+			for (j = 6; j <= NF; j++) {
+				print type1error_pred_split_dir"/"dataset"_"h[j]".txt" > type1error_pred_split_dir"/"dataset"_paths.txt"
+			}
+			next
+		}
+		# fields
+		targetid=$4;
+		for (j = 6; j <= NF; j++) {
+			print targetid"\t"$j > type1error_pred_split_dir"/"dataset"_"h[j]".txt"
+		}
+	}' ${type1error_dir}/pred/${dataset}.txt
+
+	# sort output
+	for file in `cat ${type1error_pred_split_dir}/${dataset}_paths.txt`; do 
+		sort -n -o ${file} ${file} 
+	done
+done
+
+
+# due to number of simulations (10^6),  did this is in parallel per test sample; SGE was the resource manager for the machine used in analysis; if using a different resource manager, will need to modify submission script and ./type1error_pred_results_setup_perID.R
+# script for submitting job to SGE, requesting 20 cores, max 10 concurrent jobs
+qsub -N predsetperid -wd ${type1error_dir}/pred/logs -pe smp 20 -t 1-800 -tc 10 -v scenario_sim_i_suffix="0.1_0.1_0.5_0.1_0.1_667" ./submit_type1error_pred_results_setup_perID.sh
+
+
+
+Rscript ./type1error_pred_results.R ${sim_dir}/ 0.1_0.1_0.5_0.1_0.1_667${suffix}
+
+
+# get table
+Rscript ./type1error_results.R ${sim_dir}/ 0.1_0.1_0.5_0.1_0.1_667${suffix}
+
+
 
 ########################
 module unload tabix/0.2.6

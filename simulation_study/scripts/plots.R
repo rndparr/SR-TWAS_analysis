@@ -50,19 +50,12 @@ pheno_h2_list <- c(0.05, 0.1, 0.175, 0.25, 0.375, 0.5, 0.625, 0.75, 0.875)
 
 filetypes <- c('jpeg')
 
-
+# output file path vars
 subtitle_suf <- ''
 subtitle_suf <- '_subtitle'
 
 # load data
 load(paste0(sim_dir, 'plot/plot_data', suffix, '.Rdata'))
-
-
-############################################
-# Plot size
-w <- 8.5
-h <- 8 + ifelse(subtitle_suf == '', 0, 0.5)
-h2 <- 6.25 + ifelse(subtitle_suf == '', 0, 0.5)
 
 ################
 # PLOT FUNCTIONS
@@ -134,13 +127,17 @@ get_subtitle <- function() {
 	} 
 }
 
+############################################
+# Plot size
+w <- 8.5
+h <- 8 + ifelse(subtitle_suf == '', 0, 0.5)
+h2 <- 6.25 + ifelse(subtitle_suf == '', 0, 0.5)
 
 ############################################
 # subtitle, facet labels
 subtitle_str <- get_subtitle()
 expr_facet_lab <- get_expr_facet_lab()
 pcausal_facet_lab <- get_pcausal_facet_lab()
-
 
 # set up palette
 ## https://pmassicotte.github.io/paletteer_gallery/
@@ -152,8 +149,8 @@ pal0 <- setNames(c(paletteer_d(palette, n=6)), c('black','orange','blue','red','
 color_pal <- setNames(c(paletteer_d(palette, n=6)), c('Naive','TIGAR-ROSMAP','PrediXcan-GTEx','SR-TWAS','TIGAR-ROSMAP_valid', 'Avg-Base+SR'))[labels_vec]
 shape_pal <- setNames(c(0, 2, 6, 3, 1, 5), c('PrediXcan-GTEx', 'TIGAR-ROSMAP', 'TIGAR-ROSMAP_valid', 'Naive', 'SR-TWAS', 'Avg-Base+SR'))[labels_vec]
 
+# other plot settings
 legend_pos <- 'bottom'
-
 
 ####################
 # POWER
