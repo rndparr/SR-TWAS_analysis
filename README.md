@@ -6,4 +6,9 @@ This repository contains scripts for replicating the analysis presented in the S
 
 The main SR-TWAS repository can be found at [https://github.com/yanglab-emory/SR-TWAS](https://github.com/yanglab-emory/SR-TWAS).
 
+---
+
+*SR-TWAS: Leveraging Multiple Reference Panels to Improve TWAS Power by Ensemble Machine Learning.*
+Randy L. Parrish, Aron S. Buchman, Shinya Tasaki, Yanling Wang, Denis Avey, Jishu Xu, Philip L. De Jager, David A. Bennett, Michael P. Epstein, Jingjing Yang.
+medRxiv 2023.06.20.23291605; doi: [https://doi.org/10.1101/2023.06.20.23291605](https://doi.org/10.1101/2023.06.20.23291605) [Preprint]
 
