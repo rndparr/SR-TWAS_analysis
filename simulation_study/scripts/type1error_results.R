@@ -25,13 +25,13 @@ library(xtable)
 
 ######################################################
 # directory for simulation files
-dir <- paste0(sim_dir, '/type1_error/', scenario_sim_i_suffix, '/')
+wkdir <- paste0(sim_dir, '/type1_error/', scenario_sim_i_suffix, '/')
 
 pred_out_cols <- c('i', 'TIGAR-ROSMAP', 'PrediXcan-GTEx', 'TIGAR-ROSMAP_valid', 'Naive', 'SR', 'Avg')
 pred_out_col_classes <- c('character', rep('numeric', 6))
 
 # read in data
-dat <- read.table(paste0(dir, 'results/pred_sig_results.txt'), header=FALSE, colClasses=pred_out_col_classes)
+dat <- read.table(paste0(wkdir, 'results/pred_sig_results.txt'), header=FALSE, colClasses=pred_out_col_classes)
 colnames(dat) <- pred_out_cols
 
 # function to get results for table
@@ -47,7 +47,7 @@ dat_table <- t(sapply(sig_lvls, get_results)) / 10^6
 
 write.table(
 	dat_table,
-	paste0(dir, 'results/results_table.txt'),
+	paste0(wkdir, 'results/results_table.txt'),
 	quote=FALSE,
 	row.names=TRUE,
 	col.names=TRUE,
