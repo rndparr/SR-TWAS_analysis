@@ -4,6 +4,10 @@
 
 This repository contains scripts for replicating the analysis presented in the SR-TWAS manuscript.
 
+[![DOI](https://zenodo.org/badge/710967887.svg)](https://zenodo.org/doi/10.5281/zenodo.12575802)
+
+---
+
 The main SR-TWAS repository can be found at [https://github.com/yanglab-emory/SR-TWAS](https://github.com/yanglab-emory/SR-TWAS).
 
 ---
